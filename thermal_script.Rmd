@@ -1,0 +1,75 @@
+---
+title: "agua_fria_thermal"
+author: "Benjamin Wiebe"
+date: "2022-09-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("reticulate")
+py_install("matplotlib")
+py_install("plotly")
+py_install("scipy")
+py_install("pillow")
+```
+```{python}
+import pandas as pd
+import os
+import numpy as np
+from PIL import Image
+from numpy import asarray
+from glob import glob
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import ListedColormap
+import plotly.graph_objects as go
+from scipy import stats
+from scipy.stats import kurtosis
+from scipy.stats import skew
+np.seterr(divide='ignore', invalid='ignore')
+```
+```{python Create Dict Function}
+#reads through files in directory (dir), outputs 1 list (of names) and 2 dictionaries with file numbers as keys, one for rgb np.arrays and
+#another with thermal np.arrays
+def create_dict(dir): 
+
+  #define dicts and lists for later
+  rgb_dict = {}
+  thermal_dict = {}
+  name_list = []
+
+  #iterate through files in a given folder (dir), extract rgb data from the jpg files, add     them to rgb_dict with the number from
+  #the file name as the key and the numpy ndarray as the value. Also adds name to the list     name_list
+
+  for file in os.listdir(dir):
+    name = file[:-4]
+    if file.endswith(".jpg"):
+
+      image = Image.open(dir + file) #read jpg with PIL Image library
+      data = np.array(image) #converts jpg to np.array
+
+      rgb_dict[name] = data #write to dictionary
+
+      name_list.append(name)
+
+  #iterate through files in dir, read thermal csv files into pd.DataFrames, convert to numpy arrays, save to     #thermal_dict with name
+  #as key
+
+  for file in os.listdir(dir):
+    name = file[:-4]
+    if file.endswith(".csv"):
+
+      read = pd.read_csv(dir + file, skiprows = 10)
+
+      num_cols = len(read.axes[1])
+
+      thermal = pd.read_csv(dir + file, skiprows = 10, usecols = range(1,num_cols), header = None)
+      
+      thermal_np = pd.DataFrame(thermal).to_numpy()
+      thermal_dict[name] = thermal_np #write to dictionary
+      
+  return(rgb_dict, thermal_dict, name_list)
+
+```
+
